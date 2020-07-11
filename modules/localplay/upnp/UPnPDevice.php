@@ -45,9 +45,14 @@ class UPnPDevice
         curl_close($curl);
         //!!debug_event('upnpdevice', 'parseDescriptionUrl response: ' . $response, 5);
 
+        // Remove namespace from XML file to make the simplexml lib easier to use
+        $response = str_replace('xmlns=', 'foo=', $response);
         $responseXML = simplexml_load_string($response);
-        $services    = $responseXML->device->serviceList->service;
-        foreach ($services as $service) {
+        // Devices can be nested on more complex players, such as Sonos. Find the MediaRenderer devices.
+        $devices = $responseXML->xpath("//device[./deviceType = 'urn:schemas-upnp-org:device:MediaRenderer:1']");
+
+        // Pick first MediaRenderer
+        foreach ($devices[0]->serviceList->service as $service) {
             $serviceType                                      = $service->serviceType;
             $serviceTypeNames                                 = explode(":", $serviceType);
             $serviceTypeName                                  = $serviceTypeNames[3];
